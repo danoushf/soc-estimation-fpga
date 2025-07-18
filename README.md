@@ -52,7 +52,7 @@ The project uses the UniboPowertools dataset with the following characteristics:
 
 - **Input Features**: Voltage, Current, Temperature
 - **Output**: State of Charge (SoC) percentage
-- **Test Types**: 'S' (Specific discharge cycles)
+- **Test Types**: 'S' (Standard discharge cycles)
 - **Battery Lines**: 37 (charge), 40 (discharge)
 
 You can download the dataset from this page:
