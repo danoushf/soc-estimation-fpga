@@ -41,4 +41,5 @@ mdh = ModelDataHandler(dataset, [
 
 ## Note
 
-These files are specific to the UniboPowertools dataset and may need to be adapted for other battery datasets.
+These files are specific to the UniboPowertools dataset and may need to be adapted for other battery datasets. For more information, please visit this page:
+https://data.mendeley.com/datasets/n6xg5fzsbv/1
