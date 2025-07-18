@@ -55,6 +55,9 @@ The project uses the UniboPowertools dataset with the following characteristics:
 - **Test Types**: 'S' (Specific discharge cycles)
 - **Battery Lines**: 37 (charge), 40 (discharge)
 
+You can download the dataset from this page:
+https://data.mendeley.com/datasets/n6xg5fzsbv/1
+
 ### Data Split
 
 **Training Data:**
