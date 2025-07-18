@@ -2,269 +2,87 @@
 
 ## Abstract
 
-Accurate State-of-Charge (SOC) estimation is critical for the safe and efficient operation of lithium-ion batteries in electric vehicles and energy storage systems. This study presents a comprehensive comparative analysis of deep learning architectures for SOC estimation using the UNIBO Powertools Dataset. We implement and evaluate five different neural network architectures: Long Short-Term Memory (LSTM), Bidirectional LSTM, Gated Recurrent Unit (GRU), Bidirectional GRU, and 1D Convolutional Neural Networks (CNN). A novel sliding window preprocessing technique is introduced with multiple window sizes (6, 12, 18, and 30 time steps) to transform variable-length discharge cycles into fixed-size temporal sequences. Bayesian optimization is employed for automated hyperparameter tuning across all model architectures to ensure optimal performance. The models are trained and tested on battery data collected from standard discharge tests at 5A constant current, using voltage, current, and temperature as input features. Results demonstrate that Bidirectional GRU with a window size of 30 achieves the best performance with a Root Mean Square Error (RMSE) of 0.39%, while other architectures achieve competitive results with RMSE values below 1%. The sliding window approach successfully addresses the challenge of variable-length temporal data while preserving crucial temporal dependencies. Computational efficiency analysis reveals trade-offs between accuracy and computational cost, providing guidance for selecting appropriate architectures based on deployment constraints. This work contributes to the advancement of intelligent battery management systems by demonstrating the effectiveness of deep learning approaches for accurate SOC estimation across different battery specifications and operational conditions.
+Accurate estimation of the State of Charge (SOC) in Lithium-ion batteries is critical for the safe and efficient operation of electric vehicles and energy storage systems. This paper proposes a lightweight deep learning framework for SOC estimation, targeting deployment on resource-constrained edge AI hardware. We evaluate several recurrent and convolutional neural network architectures using the UNIBO Powertools Dataset, with a GRU-based model achieving the best balance between accuracy and memory footprint. The GRU model, featuring a single recurrent layer followed by three dense layers, is reimplemented in C++ and deployed on a Xilinx ZCU104 FPGA. The deployment achieves a latency of 38.76 ms and an energy consumption of 59.70 mJ per inference, with minimal resource usage. These results demonstrate the suitability of our approach for real-time, low-power battery management applications and confirm the benefits of FPGA acceleration for embedded SOC estimation tasks.
 
-**Keywords:** Lithium-ion battery, State-of-Charge estimation, Deep learning, LSTM, GRU, Bidirectional networks, Sliding window, Bayesian optimization, Battery management systems
+**Keywords:** State of Charge Estimation, Lithium-Ion Batteries, Deep Learning, GRU, Edge AI, FPGA Deployment, Real-Time Inference, Embedded Systems.
 
 ## 1. Introduction
 
-The transition towards sustainable energy systems has accelerated the development and deployment of electric vehicles (EVs) and energy storage systems. Lithium-ion batteries, as the dominant power source for these applications, require sophisticated Battery Management Systems (BMS) to ensure safe and efficient operation. One of the most critical parameters in battery management is the State-of-Charge (SOC) estimation, which indicates the remaining available energy in the battery as a percentage of its total capacity.
+The transition toward sustainable energy systems has accelerated the adoption of electric vehicles [1, 2] and energy storage solutions [3], driving the demand for high-performance and reliable battery technologies. Lithium-ion batteries, as the prevailing energy source for these applications, require advanced Battery Management Systems (BMS) to ensure safety, efficiency, and longevity. A central component of any BMS is the estimation of the State of Charge (SOC), which reflects the remaining usable energy in the battery as a percentage of its total capacity [4]. Accurate SOC estimation is essential for preventing over-charge and over-discharge conditions, both of which can degrade battery performance or cause safety risks [5]. 
 
-Accurate SOC estimation is crucial for several reasons: it prevents battery over-discharge and over-charge conditions that can lead to safety hazards and reduced battery lifespan, enables optimal energy management strategies, and provides users with reliable information about remaining battery capacity. Traditional SOC estimation methods can be categorized into three main approaches: direct methods that rely on measurable physical parameters, model-based methods that use equivalent circuit models combined with adaptive filters, and data-driven methods that leverage machine learning techniques.
+Moreover, reliable real-time SOC prediction enables improved performance, enhanced safety, and extended battery lifespan across a variety of applications, from consumer electronics to industrial automation. Traditional model-based estimation techniques, used in collaboration with adaptive filters such as Kalman filter, H-infinity filter, and Particle filter[6], while effective, often require precise modeling and calibration, which may not generalize well across different battery types and usage conditions. 
 
-Recent advances in deep learning have shown promising results for SOC estimation, particularly Long Short-Term Memory (LSTM) networks and their variants, which can effectively capture the temporal dependencies inherent in battery discharge patterns. However, most existing studies focus on single battery types or limited experimental conditions, limiting their generalizability.
+Recent advancements in deep learning methods have enabled high-accuracy estimation of the SOC in Lithium-ion batteries, as demonstrated in several studies that employed advanced neural network architectures. Dubey et al. [7] applied an LSTM with Bayesian optimization to reach an RMSE of 0.87% and MAE of 0.64% at 40°C; Chemali et al. [8] utilized an LSTM-RNN to achieve an RMSE of 0.69% and MAE of 0.57% at 10°C. Wang et al. [9] used a residual Convolutional Neural Networks (CNN) to obtain an RMSE of 1.26% and MAE of 1.00% across various temperatures. Hannan et al. [10] employed a self-supervised Transformer model to obtain an RMSE of 0.90% and MAE of 0.44% at room temperature. 
 
-This study presents a comprehensive comparative analysis of various deep learning architectures for SOC estimation, including LSTM, Bidirectional LSTM, GRU, Bidirectional GRU, and 1D Convolutional Neural Networks. We introduce a sliding window data preprocessing technique with multiple window sizes and employ Bayesian optimization for hyperparameter tuning to achieve optimal performance for each model architecture.
+However, deploying such estimators in embedded and resource-constrained environments, such as electric vehicles or portable tools, requires solutions that are not only accurate, but also energy-efficient and capable of real-time operation. In this context, Field-Programmable Gate Arrays (FPGAs) provide a powerful hardware platform, enabling parallel execution, low latency, and reduced power consumption [11]. 
 
-## 2. Experimental Setup
+In this work, we conduct a comprehensive evaluation of several deep learning architectures for SOC estimation, including LSTM, Bidirectional LSTM, GRU, Bidirectional GRU, and 1D-CNN. To support this study, we utilize the UNIBO Powertool Dataset [12], which includes measurements from multiple batteries of different manufacturers, nominal capacities, and aging stages, providing a rich benchmark for state-of-the-art SOC prediction that spans multiple discharge cycles and battery degradation states. We propose a sliding windows preprocessing approach, which segments the data into shorter, fixed-length sequences and allows SOC estimation at any point in the cycle, not only when starting from 100 %. This confirms maximum flexibility, making our method suitable for dynamic real-world applications.  
+
+We evaluate each model in terms of the trade-off between predictive accuracy and memory footprint, with the goal of identifying lightweight models suitable for real-time deployment on edge hardware such as FPGAs. The best-performing model is synthesized on a Xilinx ZCU104 FPGA to demonstrate its feasibility for real-time, low-power deployment on edge hardware. Our results highlight the potential of lightweight neural networks to provide accurate and reliable SOC estimation with limited resource and energy constraints. 
+
+## 2. Methodology
 
 ### 2.1 Dataset Description
 
-This study utilizes the UNIBO Powertools Dataset, collected at the University of Bologna for analyzing batteries intended for use in various cleaning equipment. The dataset comprises 27 batteries from different manufacturers with various nominal capacities ranging from 2.0Ah to 4.0Ah. The experiments were designed to capture battery behavior across different life stages, from beginning of life to end of life.
+This study utilizes the UNIBO Powertools Dataset [12], collected by the University of Bologna to analyze the behavior of Lithium-ion batteries during repeated charge and discharge cycles. The dataset was specifically designed to evaluate a variety of battery cells intended for use in cleaning equipment such as vacuum and automated floor cleaners. Our analysis focuses on the standard test configuration, and the dataset comprises 16 batteries from different manufacturers, with nominal capacities ranging from 2.0Ah to 4.0Ah. The experiments were designed to capture battery behavior across various stages of usage, from beginning of life to end of life. 
 
-For this study, we focused specifically on the standard test configuration, where batteries were discharged at a constant current of 5A. The cycling procedure followed a structured protocol:
-- Charge cycle: Constant Current-Constant Voltage (CC-CV) at 1.8A and 4.2V with 100mA cut-off
-- Discharge cycle: Constant Current until cut-off voltage (2.5V)
-- Repeat main cycle 100 times
-- Capacity measurement: charge CC-CV 1A 4.2V (100mA cut-off) and discharge CC 0.1A 2.5V
-
-The sampling period during discharge was 10 seconds, providing detailed temporal information about battery behavior. Input features included voltage (V), current (I), and temperature (T) measurements, with SOC percentage as the target output.
+In the standard test protocol, batteries were discharged at a constant current of 5A. The cycling procedure followed a structured approach: the charge cycle was conducted using a Constant Current-Constant Voltage method at 1.8A and 4.2V with a 100mA cut-off, while the discharge cycle applied a constant current until the cut-off voltage of 2.5V was reached. This cycle was repeated 100 times. During each discharge cycle, data was recorded every 10 seconds, providing high-resolution temporal information on battery dynamics. The input features included voltage (V), current (I), and temperature (T) measurements, with the corresponding SOC percentage as the target output for model training and evaluation.
 
 ### 2.2 Data Preparation and Preprocessing
 
-#### 2.2.1 Data Loading and Partitioning
+Unlike the original dataset configuration [12], which uses the full sequence of 287 time steps as model input, and thus requires each cycle to start from a fixed full-charge reference at 100 %, our approach adopts a flexible windowing strategy to segment the data into shorter sequences of fixed length. This means that it can be applied at any SOC point, and we are not constrained to begin from 100 %, allowing the model to operate during partial cycles, mid‑discharge, or real‑world varied usage conditions, making our method far more advantageous in practical scenarios. 
 
-The dataset was partitioned into training and testing sets to ensure robust model evaluation:
+Also, the shorter windowing design choice aims to reduce the amount of input data required for each prediction, searching for smaller models suitable for edge deployment. However, this also increases the difficulty of the task, as the model SOC prediction has a more limited temporal context. We evaluated four different window lengths, in particular 6, 12, 18, and 30 time steps, corresponding to 1, 2, 3, and 5 minutes, to assess the impact of sequence length on model performance. To augment the dataset and increase the number of training samples, we applied a sliding window with a stride of 1. The original dataset already includes a predefined training-test split, and we further partitioned 20% of the training set to serve as a validation set for model selection during hyperparameter optimization. For each model architecture, we conducted 50 Bayesian optimization trials, with a maximum of 100 training epochs per trial. An early stopping criterion with a patience of 15 epochs was applied based on validation loss. The results reported in this paper correspond to the best-performing configuration identified on the validation set. 
 
-**Training Data (13 battery tests):**
-- '000-DM-3.0-4019-S', '001-DM-3.0-4019-S', '002-DM-3.0-4019-S'
-- '006-EE-2.85-0820-S', '007-EE-2.85-0820-S', '042-EE-2.85-0820-S'
-- '018-DP-2.00-1320-S', '019-DP-2.00-1320-S'
-- '036-DP-2.00-1720-S', '037-DP-2.00-1720-S'
-- '038-DP-2.00-2420-S', '040-DM-4.00-2320-S', '045-BE-2.75-2019-S'
+### 2.3 Deep Learning Models
 
-**Testing Data (4 battery tests):**
-- '003-DM-3.0-4019-S', '008-EE-2.85-0820-S'
-- '039-DP-2.00-2420-S', '041-DM-4.00-2320-S'
+We implemented and evaluated five deep learning architectures for the task of SOC estimation, each selected for its ability to model temporal dependencies and extract relevant patterns from sequential data. To optimize model performance, we employed Bayesian optimization to explore the best configuration of hyperparameters within predefined ranges for each architecture: 
 
-This partitioning strategy ensures that the model is tested on unseen battery cells while maintaining representation across different battery specifications.
+LSTM and Bidirectional LSTM models: Both architectures were configured with 1 to 3 layers, each containing 32 to 256 units (step size of 32), using the tanh activation function. The return_sequences parameter was enabled for all layers except the final one to maintain compatibility with subsequent dense layer. The bidirectional variant enhances context modeling by processing sequences in both directions. 
 
-#### 2.2.2 Sliding Window Technique
+GRU and Bidirectional GRU models: Like the LSTM-based architectures, they featured 1 to 3 layers with 32 to 256 units per layer. GRUs provide a more lightweight alternative to LSTMs, with faster training and fewer parameters. The bidirectional GRU extends this by adding context from both directions of the input sequence. 
 
-A novel sliding window preprocessing approach was implemented to transform the sequential battery data into fixed-length input sequences suitable for deep learning models. This technique offers several advantages:
+1D-CNN model: The 1D-CNN model included between 1 and 3 convolutional layers, each with 32 to 256 filters with step 32 and kernel sizes ranging from 2 to 5. The SELU activation function was used, and padding 'same' to preserve sequence length.  
 
-1. **Standardized Input Size:** Converts variable-length discharge cycles into fixed-size windows
-2. **Temporal Context:** Preserves temporal relationships within each window
-3. **Data Augmentation:** Increases the effective size of the training dataset
-4. **Improved Generalization:** Helps models learn patterns at different temporal scales
-
-The sliding window implementation included:
-- **Window Sizes:** Multiple window sizes were tested (6, 12, 18, and 30 time steps) to evaluate the impact of temporal context length
-- **Stride:** A stride of 1 was used to maximize data utilization
-- **Padding Strategy:** Initial padding with the first value of each sequence to maintain window size consistency
-- **Label Alignment:** Labels were aligned to the end of each window to predict SOC at the current time step
-
-The sliding window transformation process:
-```
-Original sequence: [x1, x2, x3, ..., xn]
-Window size = 3, stride = 1
-Windows: [x1, x2, x3] -> y3
-         [x2, x3, x4] -> y4
-         [x3, x4, x5] -> y5
-         ...
-```
-
-### 2.3 Model Architectures
-
-Five different deep learning architectures were implemented and evaluated:
-
-#### 2.3.1 Long Short-Term Memory (LSTM)
-- Standard LSTM with tunable number of layers (1-3)
-- Units per layer: 32-256 (step size: 32)
-- Activation function: tanh
-- Return sequences: True for all but the last layer
-
-#### 2.3.2 Bidirectional LSTM
-- Bidirectional wrapper around LSTM layers
-- Processes sequences in both forward and backward directions
-- Same parameter ranges as standard LSTM
-- Enhanced capability to capture dependencies from both past and future contexts
-
-#### 2.3.3 Gated Recurrent Unit (GRU)
-- Simplified recurrent architecture with fewer parameters than LSTM
-- Tunable layers: 1-3
-- Units per layer: 32-256 (step size: 32)
-- Faster training compared to LSTM while maintaining comparable performance
-
-#### 2.3.4 Bidirectional GRU
-- Bidirectional implementation of GRU
-- Combines benefits of GRU efficiency with bidirectional processing
-- Same parameter configuration as standard GRU
-
-#### 2.3.5 1D Convolutional Neural Network (1D CNN)
-- Convolutional layers: 1-3
-- Filters per layer: 32-256 (step size: 32)
-- Kernel sizes: 2-5
-- Activation function: SELU
-- Padding: 'same' to maintain sequence length
-- Followed by flatten layer and dense layers
-
-All architectures included:
-- Tunable dense layers (1-3) with 64-512 units
-- Dropout layers for regularization (0.0-0.5)
-- SELU activation for dense layers
-- Linear activation for output layer
-- Huber loss function for robust training
-
-### 2.4 Bayesian Optimization
-
-Bayesian optimization was employed for automated hyperparameter tuning, offering several advantages over traditional grid search or random search:
-
-1. **Efficiency:** Reduces the number of required evaluations by intelligently selecting hyperparameter combinations
-2. **Global Optimization:** Balances exploration and exploitation to find global optima
-3. **Uncertainty Quantification:** Provides confidence estimates for hyperparameter choices
-
-**Configuration:**
-- Optimizer: BayesianOptimization from Keras Tuner
-- Objective: Validation loss minimization
-- Maximum trials: 20 per model architecture
-- Executions per trial: 1
-- Early stopping: Patience of 10 epochs on validation loss
-
-**Hyperparameter Search Spaces:**
-- Learning rate: [1e-5, 5e-4, 1e-4, 5e-3, 1e-3]
-- Number of layers: 1-3 (architecture dependent)
-- Units per layer: 32-256 (step size: 32)
-- Dropout rates: 0.0-0.5 (step size: 0.1)
-- Dense layer units: 64-512 (step size: 32)
-
-### 2.5 Training Configuration
-
-**Training Parameters:**
-- Optimizer: Adam with tuned learning rates
-- Loss function: Huber loss (robust to outliers)
-- Metrics: MSE, MAE, MAPE, RMSE
-- Epochs: 100 (with early stopping)
-- Batch size: 2048
-- Validation split: 20%
-- Callbacks: Early stopping (patience: 10)
-
-**Evaluation Strategy:**
-For each model architecture and window size combination:
-1. Bayesian optimization identifies optimal hyperparameters
-2. Top 5 models are evaluated on both validation and test sets
-3. Best model is selected based on test RMSE performance
-4. Results are saved for comprehensive comparison
+Bayesian optimization also tuned the number of dense layers (1-3), units per layer (64 -512), dropout rate (0.0-0.5), and selected the learning rate from a discrete set of values: 1×10-5, 5×10-5, 1×10-4, 5×10-4, 1×10-3. All models were trained using the Huber loss function, which ensures robustness to outliers and stable convergence. 
 
 ## 3. Experimental Results
 
-### 3.1 Model Performance Comparison
+To evaluate the effectiveness of the proposed approach, we conducted different experiments, comparing different architectures and window size (Table 1). Among all tested models, the 30 window size GRU demonstrated the best trade-off between accuracy and size, achieving near the lowest error values (RMSE = 3.379%, MAE = 2.693%) while maintaining a compact .tflite size of just 741 KB. This configuration was selected for further deployment and analysis. The selected model configuration consists of a single GRU layer with 192 units, followed by three fully connected dense layers. A dropout layer with a rate of 0.1 was applied after the GRU. The dense layers were configured with 160, 64, and 512 units respectively, interleaved with dropout of 0.2 and 0.1 after the first and second dense layers. The learning rate was set to 1×10-3.
 
-The experimental results demonstrate the effectiveness of different deep learning architectures for SOC estimation across various sliding window sizes. Each model was optimized using Bayesian optimization, and the best performing configurations were evaluated on the test dataset.
+<img width="585" height="452" alt="image" src="https://github.com/user-attachments/assets/cee09347-310c-4207-b552-281e360fe0ae" />
 
-#### 3.1.1 Performance by Architecture
+To validate our choice of smaller windows techniques, we compared in Table 2 our selected model (GRU, window size 30) against a state-of-the-art LSTM-based solution from the literature, which requires a fixed starting reference. While our model achieves slightly worse accuracy (RMSE = 3.38% vs 1.81%), it significantly outperforms in terms of size and number of parameters. Our GRU model requires less than one-fifth of the memory (741 KB vs 3,923 KB) and over five times fewer parameters (188K vs nearly 1M), making it better suitable for edge deployment than the state-of-the-art.
 
-**LSTM Models:**
-- The LSTM architecture showed consistent performance across different window sizes
-- Best performance achieved with window size 6: RMSE ≈ 0.73%
-- Performance remained stable for window sizes 12 and 18
-- Slight degradation observed with window size 30, suggesting potential overfitting to longer sequences
 
-**Bidirectional LSTM Models:**
-- Bidirectional LSTM generally outperformed standard LSTM
-- Best results with window sizes 12 and 18: RMSE ≈ 0.61-0.66%
-- The bidirectional nature effectively captured both forward and backward temporal dependencies
-- Showed improved robustness across different window sizes
+<img width="588" height="113" alt="image" src="https://github.com/user-attachments/assets/801874d8-91df-4c9a-ad4f-1854a31564cb" />
 
-**GRU Models:**
-- GRU demonstrated excellent computational efficiency with competitive accuracy
-- Best performance with window size 6: RMSE ≈ 0.61%
-- Consistent performance across window sizes 12, 18, and 30
-- Faster training times compared to LSTM architectures
 
-**Bidirectional GRU Models:**
-- Superior performance among all tested architectures
-- Best results achieved with window size 30: RMSE ≈ 0.39%
-- Excellent performance across all window sizes (6, 12, 18)
-- Optimal balance between model complexity and performance
+To validate the feasibility of deployment on edge AI hardware, we synthesized the GRU (window 30) model on a Xilinx ZCU104 FPGA board. The model was reimplemented from scratch in C++, without relying on any high-level synthesis from Python-based frameworks. We then used Xilinx Vivado to simulate the deployment of the C++ design onto the FPGA to extract accurate measurements of latency, power usage, and energy consumption. To ensure a fair comparison, both GRU and LSTM models were implemented without applying any architecture-specific optimizations. This allows for an unbiased evaluation of their inherent efficiency under the same development conditions. Table 3 reports the results in terms of latency, power consumption, energy usage, and resource utilization. Our GRU-based system achieved a latency of 38.76 ms and consumed only 59.70 mJ per inference, confirming its suitability for low‑power real‑time applications. Notably, the model utilized just 18.73% of Flip‑Flops and 37.51% of Look‑Up Tables, leaving room for further integration or multi‑model deployment. By contrast, the state-of-the-art LSTM, using full window size as input, exhibits 15× higher latency, 16× greater energy consumption, and increased resource demand, making it less suitable for edge deployment.
 
-**1D CNN Models:**
-- Strong performance particularly with window size 18: RMSE ≈ 0.73%
-- Effective at capturing local temporal patterns
-- Different performance characteristics compared to recurrent models
-- Good alternative when computational resources are limited
+<img width="586" height="118" alt="image" src="https://github.com/user-attachments/assets/893ae868-4d35-4842-9ac8-a0c85aca830c" />
 
-#### 3.1.2 Window Size Analysis
-
-The sliding window size significantly impacted model performance:
-
-- **Window Size 6:** Suitable for models requiring quick adaptation, best for LSTM and GRU
-- **Window Size 12:** Balanced performance across most architectures
-- **Window Size 18:** Optimal for 1D CNN and competitive for other architectures
-- **Window Size 30:** Best for Bidirectional GRU, potentially providing more temporal context
-
-### 3.2 Best Performing Models
-
-Based on comprehensive evaluation, the top performing configurations were:
-
-1. **Bidirectional GRU (Window Size 30):** RMSE = 0.39%
-2. **LSTM (Window Size 6):** RMSE = 0.73%
-3. **1D CNN (Window Size 18):** RMSE = 0.73%
-4. **GRU (Window Size 6):** RMSE = 0.61%
-5. **Bidirectional LSTM (Window Size 12):** RMSE = 0.61%
-
-### 3.3 Hyperparameter Analysis
-
-The Bayesian optimization process revealed important insights about optimal hyperparameter configurations:
-
-**Learning Rates:** Most models converged to learning rates in the range [1e-4, 5e-4]
-**Architecture Depth:** 2-3 layer architectures generally outperformed single-layer models
-**Regularization:** Moderate dropout rates (0.1-0.3) provided optimal regularization
-**Dense Layers:** 1-2 dense layers with 128-256 units were most effective
-
-### 3.4 Computational Efficiency
-
-Training and inference times varied significantly across architectures:
-- **1D CNN:** Fastest training and inference
-- **GRU:** ~30% faster than LSTM with comparable accuracy
-- **Bidirectional models:** 2x computational cost but superior accuracy
-- **LSTM:** Highest computational cost among recurrent models
 
 ## 4. Conclusion
 
-This comprehensive study presents a thorough evaluation of deep learning approaches for battery SOC estimation using the UNIBO Powertools Dataset. The key contributions and findings include:
+We presented a lightweight and energy-efficient deep learning approach for SOC estimation of Lithium-ion batteries, with a focus on real-time deployment on edge AI hardware. Among several deep learning architectures, a GRU-based model with a window size of 30 time steps demonstrated the best trade-off be-tween accuracy and memory footprint, achieving an RMSE of 3.38% and a size of only 741 KB.
+Deployability was assessed with a Xilinx ZCU104 FPGA hardware synthesis. The FPGA deployment achieved a latency of 38.76 ms and an energy consump-tion of 59.70 mJ per inference, confirming its suitability for low-power, real-time applications. The system also showed limited hardware resource utilization, of-fering potential for additional integration and highlights the effectiveness of di-rect low-level implementation.
 
-### 4.1 Key Findings
+### 4.1 Future Work
 
-1. **Architecture Performance:** Bidirectional GRU emerged as the best performing architecture, achieving RMSE of 0.39% with window size 30, demonstrating superior capability in capturing bidirectional temporal dependencies in battery discharge patterns.
+Future work may concern dynamic quantization and mixed-precision tech-niques to further reduce model size and power, as well as integration with adap-tive battery management systems for online operation [13].
 
-2. **Sliding Window Effectiveness:** The sliding window preprocessing technique proved highly effective, with different window sizes optimal for different architectures. This approach successfully addressed the challenge of variable-length discharge cycles while preserving temporal relationships.
-
-3. **Bayesian Optimization Success:** Automated hyperparameter tuning through Bayesian optimization significantly improved model performance compared to default configurations, reducing the need for manual parameter selection and ensuring reproducible results.
-
-4. **Computational Trade-offs:** While bidirectional models achieved the best accuracy, simpler architectures like GRU and 1D CNN provided excellent performance with significantly lower computational costs, making them suitable for resource-constrained applications.
-
-### 4.2 Practical Implications
-
-The results demonstrate that deep learning models can achieve highly accurate SOC estimation (RMSE < 1%) for lithium-ion batteries across different specifications and life stages. The sliding window approach enables real-time SOC estimation by processing fixed-length temporal sequences, making it suitable for embedded BMS implementations.
-
-The comparative analysis provides valuable guidance for selecting appropriate architectures based on application requirements:
-- **High-accuracy applications:** Bidirectional GRU with window size 30
-- **Real-time constraints:** 1D CNN or standard GRU
-- **Balanced performance:** LSTM with window size 6
-
-### 4.3 Future Work
-
-Several directions for future research emerge from this study:
-
-1. **Multi-battery Generalization:** Extending the approach to include multiple battery chemistries and manufacturers
-2. **Online Learning:** Developing adaptive models that can update predictions based on battery aging
-3. **Uncertainty Quantification:** Incorporating prediction uncertainty for safety-critical applications
-4. **Edge Deployment:** Optimizing models for deployment on resource-constrained embedded systems
-5. **Multi-output Prediction:** Simultaneous estimation of SOC, State-of-Health (SOH), and remaining useful life
-
-### 4.4 Conclusions
-
-This study successfully demonstrates that deep learning approaches, particularly when combined with appropriate preprocessing techniques and hyperparameter optimization, can achieve highly accurate SOC estimation for lithium-ion batteries. The sliding window technique provides an effective method for handling variable-length temporal data, while Bayesian optimization ensures optimal model configurations. The comprehensive comparison across multiple architectures and window sizes provides valuable insights for practitioners and researchers working on battery management systems.
-
-The achieved performance levels (RMSE < 1%) are suitable for practical BMS applications, and the computational analysis provides guidance for selecting appropriate architectures based on specific deployment constraints. This work contributes to the advancement of intelligent battery management systems and supports the broader adoption of electric vehicles and energy storage systems.
+## References
+1.	Zhang, D., Zhong, C., Xu, P., Tian, Y.: Deep Learning in the State of Charge Estimation for Li-Ion Batteries of Electric Vehicles: A Review. Machines. 10, 912 (2022). https://doi.org/10.3390/machines10100912.
+2.	Damodarin, U.M., Cardarilli, G.C., Di Nunzio, L., Re, M., Spanò, S.: Smart Electric Vehicle Charging Management Using Reinforcement Learning on FPGA Platforms. Sen-sors. 25, 2585 (2025). https://doi.org/10.3390/s25082585.
+3.	Dhungana, H., Bellotti, F., Fresta, M., Dhungana, P., Berta, R.: Assessing a Measure-ment-Oriented Data Management Framework in Energy IoT Applications. Energies. 18, 3347 (2025). https://doi.org/10.3390/en18133347.
+4.	Lima, A.B. de, Salles, M.B.C., Cardoso, J.R.: State-of-Charge Estimation of a Li-Ion Battery using Deep Forward Neural Networks, http://arxiv.org/abs/2009.09543, (2020). https://doi.org/10.48550/arXiv.2009.09543.
+5.	Ouyang, D., Chen, M., Liu, J., Wei, R., Weng, J., Wang, J.: Investigation of a commer-cial lithium-ion battery under overcharge/over-discharge failure conditions. RSC Adv. 8, 33414–33424 (2018). https://doi.org/10.1039/C8RA05564E.
+6.	Omiloli, K., Awelewa, A., Samuel, I., Obiazi, O., Katende, J.: State of charge estimation based on a modified extended Kalman filter. International Journal of Electrical and Computer Engineering (IJECE). (2023). https://doi.org/10.11591/ijece.v13i5.pp5054-5065.
+7.	Dubey, A., Zaidi, A., Kulshreshtha, A.: State-of-Charge Estimation Algorithm for Li-ion Batteries using Long Short-Term Memory Network with Bayesian Optimization. In: 2022 Second International Conference on Interdisciplinary Cyber Physical Systems (ICPS). pp. 68–73 (2022). https://doi.org/10.1109/ICPS55917.2022.00021.
+8.	Chemali, E., Kollmeyer, P.J., Preindl, M., Ahmed, R., Emadi, A.: Long Short-Term Memory Networks for Accurate State-of-Charge Estimation of Li-ion Batteries. IEEE Transactions on Industrial Electronics. 65, 6730–6739 (2018). https://doi.org/10.1109/TIE.2017.2787586.
+9.	Wang, Y.-C., et al.: State-of-Charge Estimation for Lithium-Ion Batteries Using Residual Convolutional Neural Networks. Sensors. (2022). https://doi.org/10.3390/s22166303.
+10.	Hannan, M.A., et al.: Deep learning approach towards accurate state of charge estima-tion for lithium-ion batteries using self-supervised transformer model. Sci Rep. 11, 19541 (2021). https://doi.org/10.1038/s41598-021-98915-8.
+11.	Spagnolo, F., Corsonello, P., Frustaci, F., Perri, S.: Efficient implementation of signed multipliers on FPGAs. Computers and Electrical Engineering. 116, 109217 (2024). https://doi.org/10.1016/j.compeleceng.2024.109217.
+12.	Wong, K.L., Bosello, M., Tse, R., Falcomer, C., Rossi, C., Pau, G.: Li-Ion Batteries State-of-Charge Estimation Using Deep LSTM at Various Battery Specifications and Discharge Cycles. Conference on Information Technology for Social Good. Association for Com-puting Machinery, New York, USA (2021). https://doi.org/10.1145/3462203.3475878.
+13.	Gianoglio, C., Ragusa, E., Gastaldo, P., Gallesi, F., Guastavino, F.: Online Predictive Maintenance Monitoring Adopting Convolutional Neural Networks. Energies. 14, 4711 (2021). https://doi.org/10.3390/en14154711.
