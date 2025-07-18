@@ -225,6 +225,7 @@ For questions or collaboration opportunities, please open an issue or contact th
 
 ## 📚 References
 
-- [Battery State Estimation Literature]
+- https://github.com/KeiLongW/battery-state-estimation
+- https://data.mendeley.com/datasets/n6xg5fzsbv/1
 - [FPGA Implementation of Neural Networks]
 - [Time Series Analysis with Deep Learning]
