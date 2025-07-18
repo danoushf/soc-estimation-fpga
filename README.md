@@ -1,5 +1,7 @@
 # Battery State of Charge (SoC) Estimation for FPGA Implementation
 
+**Lightweight Deep Learning-Based SOC Estimation for Lithium-Ion Batteries on ZCU104 FPGA**
+
 This repository contains a comprehensive implementation of battery State of Charge (SoC) estimation using various deep learning models including LSTM, Bidirectional LSTM, GRU, Bidirectional GRU, and 1D CNN. The project is designed with FPGA implementation in mind and includes hyperparameter optimization using Bayesian optimization.
 
 ## 📋 Overview
@@ -85,7 +87,7 @@ The project uses the UniboPowertools dataset with the following characteristics:
    ```
 
 3. **Run the Notebook**:
-   - Open `lstm_soc_percentage.ipynb` in Jupyter Lab or VS Code
+   - Open `soc_estimation_notebook.ipynb` in Jupyter Lab or VS Code
    - Execute cells sequentially
    - Monitor training progress and results
 
@@ -172,7 +174,7 @@ This project is designed with FPGA implementation in mind:
 soc-estimation-fpga/
 ├── README.md
 ├── requirements.txt
-├── lstm_soc_percentage.ipynb
+├── soc_estimation_notebook.ipynb
 ├── data_processing/
 │   ├── unibo_powertools_data.py
 │   └── model_data_handler.py
