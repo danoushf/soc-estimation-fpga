@@ -48,7 +48,7 @@ python -c "import tensorflow as tf; print(tf.config.list_physical_devices('GPU')
 
 ### 5. Data Setup
 
-1. Download the UniboPowertools dataset
+1. Download the UniboPowertools dataset from here: https://data.mendeley.com/datasets/n6xg5fzsbv/1
 2. Place the dataset in the appropriate directory structure:
    ```
    data/
