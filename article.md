@@ -14,7 +14,7 @@ Moreover, reliable real-time SOC prediction enables improved performance, enhanc
 
 Recent advancements in deep learning methods have enabled high-accuracy estimation of the SOC in Lithium-ion batteries, as demonstrated in several studies that employed advanced neural network architectures. Dubey et al. [7] applied an LSTM with Bayesian optimization to reach an RMSE of 0.87% and MAE of 0.64% at 40°C; Chemali et al. [8] utilized an LSTM-RNN to achieve an RMSE of 0.69% and MAE of 0.57% at 10°C. Wang et al. [9] used a residual Convolutional Neural Networks (CNN) to obtain an RMSE of 1.26% and MAE of 1.00% across various temperatures. Hannan et al. [10] employed a self-supervised Transformer model to obtain an RMSE of 0.90% and MAE of 0.44% at room temperature. 
 
-However, deploying such estimators in embedded and resource-constrained environments, such as electric vehicles or portable tools, requires solutions that are not only accurate, but also energy-efficient and capable of real-time operation. In this context, Field-Programmable Gate Arrays (FPGAs) provide a powerful hardware platform, enabling parallel execution, low latency, and reduced power consumption [11]. 
+However, deploying such estimators in embedded and resource-constrained environments, such as electric vehicles or portable tools, requires solutions that are not only accurate, but also energy-efficient and capable of real-time operation. In this context, Field Programmable Gate Arrays (FPGAs) provide a powerful hardware platform, enabling parallel execution, low latency, and reduced power consumption [11]. 
 
 In this work, we conduct a comprehensive evaluation of several deep learning architectures for SOC estimation, including LSTM, Bidirectional LSTM, GRU, Bidirectional GRU, and 1D-CNN. To support this study, we utilize the UNIBO Powertool Dataset [12], which includes measurements from multiple batteries of different manufacturers, nominal capacities, and aging stages, providing a rich benchmark for state-of-the-art SOC prediction that spans multiple discharge cycles and battery degradation states. We propose a sliding windows preprocessing approach, which segments the data into shorter, fixed-length sequences and allows SOC estimation at any point in the cycle, not only when starting from 100 %. This confirms maximum flexibility, making our method suitable for dynamic real-world applications.  
 
@@ -65,12 +65,12 @@ To validate the feasibility of deployment on edge AI hardware, we synthesized th
 
 ## 4. Conclusion
 
-We presented a lightweight and energy-efficient deep learning approach for SOC estimation of Lithium-ion batteries, with a focus on real-time deployment on edge AI hardware. Among several deep learning architectures, a GRU-based model with a window size of 30 time steps demonstrated the best trade-off be-tween accuracy and memory footprint, achieving an RMSE of 3.38% and a size of only 741 KB.
-Deployability was assessed with a Xilinx ZCU104 FPGA hardware synthesis. The FPGA deployment achieved a latency of 38.76 ms and an energy consump-tion of 59.70 mJ per inference, confirming its suitability for low-power, real-time applications. The system also showed limited hardware resource utilization, of-fering potential for additional integration and highlights the effectiveness of di-rect low-level implementation.
+We presented a lightweight and energy-efficient deep learning approach for SOC estimation of Lithium-ion batteries, with a focus on real-time deployment on edge AI hardware. Among several deep learning architectures, a GRU-based model with a window size of 30 time steps demonstrated the best trade-off between accuracy and memory footprint, achieving an RMSE of 3.38% and a size of only 741 KB.
+Deployability was assessed with a Xilinx ZCU104 FPGA hardware synthesis. The FPGA deployment achieved a latency of 38.76 ms and an energy consumption of 59.70 mJ per inference, confirming its suitability for low-power, real-time applications. The system also showed limited hardware resource utilization, offering potential for additional integration and highlights the effectiveness of direct low-level implementation.
 
 ### 4.1 Future Work
 
-Future work may concern dynamic quantization and mixed-precision tech-niques to further reduce model size and power, as well as integration with adap-tive battery management systems for online operation [13].
+Future work may concern dynamic quantization and mixed-precision techniques to further reduce model size and power, as well as integration with adaptive battery management systems for online operation [13].
 
 ## References
 1.	Zhang, D., Zhong, C., Xu, P., Tian, Y.: Deep Learning in the State of Charge Estimation for Li-Ion Batteries of Electric Vehicles: A Review. Machines. 10, 912 (2022). https://doi.org/10.3390/machines10100912.
